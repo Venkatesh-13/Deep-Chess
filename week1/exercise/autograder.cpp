@@ -1,6 +1,6 @@
 #include <bits/stdc++.h>
 using namespace std;
-
+#define int long long
 /*
     Compile: g++ -O2 autograder_pick12.cpp -o autograder
     Run: ./autograder
@@ -11,6 +11,78 @@ using namespace std;
 string solve(int n, vector<long long> a) {
     // TODO: Fill this function.
     // Return one of: "Player 1" or "Player 2" or "Draw"
+    vector<int> ans(n);
+    vector<int> totm1(n);
+    vector<int> totm2(n);
+    totm1[n-1]=a[n-1];
+    if(a[n-1]>0)
+    {
+        ans[n-1] = 1;
+    }
+    else if (a[n-1]<0)
+    {
+        ans[n-1]=2;
+    }
+    else
+    {
+        ans[n-1]=0;
+    }
+    int s = a[n-1];
+    if(n!=1)
+    {
+        s+=a[n-2];
+        int x = a[n-1]+a[n-2];
+        if(x>0 || a[n-2]>a[n-1])
+        {
+            totm1[n-2]=max(x, a[n-2]);
+            totm2[n-2]=x-totm1[n-2];
+            ans[n-2]=1;
+        }
+        else if (a[n-2]<a[n-1] && x<0)
+        {
+            totm1[n-2]=max(x, a[n-2]);
+            totm2[n-2]=x-totm1[n-2];
+            ans[n-2]=2;
+        }
+        else
+        {
+            totm1[n-2]=max(x, a[n-2]);
+            totm2[n-2]=x-totm1[n-2];
+            ans[n-2]=0;
+        }
+    }
+
+    for(int i=n-3; i>=0; i--)
+    {
+        s+=a[i];
+        int o = 0; int t = 0;
+        o = totm2[i+1]+a[i] - totm1[i+1];
+        t = totm2[i+2]+a[i]+a[i+1] - totm1[i+2];
+        if(o>t)
+        {
+            totm1[i]=totm2[i+1]+a[i];
+            totm2[i]=totm1[i+1];
+        }
+        else
+        {
+            totm1[i]=totm2[i+2]+a[i]+a[i+1];
+            totm2[i]=totm1[i+2];
+        }
+    }
+
+    if(totm1[0]>totm2[0])
+    {
+        return "Player 1";
+    }
+    else if (totm1[0]<totm2[0])
+    {
+        return "Player 2";
+    }
+    else
+    {
+        return "Draw";
+    }
+    
 
     return "";
 }
@@ -28,7 +100,7 @@ static bool file_exists(const string &path) {
     return f.good();
 }
 
-int main() {
+signed main() {
     const string folder = "testcases";
 
     int passed = 0;
