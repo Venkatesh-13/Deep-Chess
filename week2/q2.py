@@ -160,22 +160,41 @@ class History:
 
     def is_win(self):
         # Feel free to implement this in anyway if needed
-        pass
+        for board in self.boards:
+            if not self.is_board_win(board):
+                return False
+        return True
 
     def get_valid_actions(self):
         # Feel free to implement this in anyway if needed
-        pass
+        valid=[]
+        valid_boards = self.check_active_boards()
+        for i, board in enumerate(self.boards):
+            if valid_boards[i]>0:
+                for j in range(9):
+                    if board[j]=='0':
+                        valid.append(9*i+j)
+        
+        return valid
 
     def is_terminal_history(self):
         # Feel free to implement this in anyway if needed
-        pass
+        return self.is_win()
 
     def get_value_given_terminal_history(self):
         # Feel free to implement this in anyway if needed
-        pass
+        curr = self.get_current_player()
+        if curr==1:
+            return 1
+        else:
+            return -1
+        
+    def update_history(self, action):
+        self.history.append(action)
+        self.boards = self.get_boards()
 
 
-def alpha_beta_pruning(history_obj, alpha, beta, max_player_flag):
+def alpha_beta_pruning(history_obj: History, alpha, beta, max_player_flag):
     """
         Calculate the maxmin value given a History object using alpha beta pruning. Use the specific move order to
         speedup (more pruning, less memory).
@@ -190,11 +209,49 @@ def alpha_beta_pruning(history_obj, alpha, beta, max_player_flag):
     global visited_histories_list
     visited_histories_list.append(history_obj.history)
     # TODO implement
+    if history_obj.is_terminal_history():
+        return history_obj.get_value_given_terminal_history()
+    curr = history_obj.get_current_player()
+    acts = history_obj.get_valid_actions()
+    ordered_acts = []
+    for act in acts:
+        if act%9 == 4:
+            ordered_acts.append(act)
+    for act in acts:
+        if act%9 in [0,2,6,8]:
+            ordered_acts.append(act)
+    for act in acts:
+        if act not in ordered_acts:
+            ordered_acts.append(act)
+    if curr==1:
+        bestu = -67
+        for act in ordered_acts:
+            new_hist = copy.deepcopy(history_obj)
+            new_hist.update_history(act)
+            val = alpha_beta_pruning(new_hist, alpha, beta, new_hist.get_current_player() == 1)
+            if val>bestu:
+                bestu = val
+            alpha = max(val, alpha)
+            if alpha>=beta:
+                break
+        return bestu
+    else:
+        worstu = 67
+        for act in ordered_acts:
+            new_hist = copy.deepcopy(history_obj)
+            new_hist.update_history(act)
+            val = alpha_beta_pruning(new_hist, alpha, beta, new_hist.get_current_player() == 1)
+            if val<worstu:
+                worstu = val
+            beta = min(val, beta)
+            if alpha>=beta:
+                break
+        return worstu
     return -2
     # TODO implement
 
 
-def maxmin(history_obj, max_player_flag):
+def maxmin(history_obj: History, max_player_flag):
     """
         Calculate the maxmin value given a History object using maxmin rule. Store the value of already visited
         board positions to speed up, avoiding recursive calls for a different history with the same board position.
@@ -207,6 +264,60 @@ def maxmin(history_obj, max_player_flag):
     # the key corresponding to self.boards.
     global board_positions_val_dict
     # TODO implement
+    curr = history_obj.get_current_player()
+
+    if history_obj.is_terminal_history():
+        return history_obj.get_value_given_terminal_history()
+    if history_obj.get_boards_str() in board_positions_val_dict:
+        return board_positions_val_dict[history_obj.get_boards_str()]
+    acts = history_obj.get_valid_actions()
+    ordered_acts = []
+    for act in acts:
+        if act%9 == 4:
+            ordered_acts.append(act)
+    for act in acts:
+        if act%9 in [0,2,6,8]:
+            ordered_acts.append(act)
+    for act in acts:
+        if act not in ordered_acts:
+            ordered_acts.append(act)
+    
+    if max_player_flag:
+        bestu = -67
+        for act in ordered_acts:
+            new_hist = copy.deepcopy(history_obj)
+            new_hist.update_history(act)
+            board_str = new_hist.get_boards_str()
+            u = 0
+            if board_str in board_positions_val_dict:
+                u = board_positions_val_dict[board_str]
+            else:
+                u = maxmin(new_hist, False)
+
+            if u > bestu:
+                bestu = u
+
+        board_positions_val_dict[history_obj.get_boards_str()] = bestu
+        return bestu
+
+            
+    else:
+        worstu = 67
+        for act in ordered_acts:
+            new_hist = copy.deepcopy(history_obj)
+            new_hist.update_history(act)
+            board_str = new_hist.get_boards_str()
+            u = 0
+            if board_str in board_positions_val_dict:
+                u = board_positions_val_dict[board_str]
+            else:
+                u = maxmin(new_hist, True)
+
+            if u < worstu:
+                worstu = u
+
+        board_positions_val_dict[history_obj.get_boards_str()] = worstu
+        return worstu
     return -2
     # TODO implement
 

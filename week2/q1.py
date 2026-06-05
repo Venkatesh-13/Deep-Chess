@@ -76,34 +76,60 @@ class History:
     def is_win(self):
         # check if the board position is a win for either players
         # Feel free to implement this in anyway if needed
+        wins = [[0,1,2],[0,3,6],[0,4,8],[1,4,7],[2,5,8],[3,4,5],[6,7,8],[2,4,6]]
+        for win in wins:
+            if self.board[win[0]]==self.board[win[1]] and self.board[win[1]]==self.board[win[2]] and self.board[win[0]]!='0':
+                return True
+        return False
         pass
 
     def is_draw(self):
-        # check if the board position is a draw
-        # Feel free to implement this in anyway if needed
-        pass
+        if self.is_win()==False and len(self.history)==9:
+            return True
+        return False
 
     def get_valid_actions(self):
         # get the empty squares from the board
         # Feel free to implement this in anyway if needed
+        empty = []
+        if not self.is_terminal_history():
+            for i in range(9):
+                if self.board[i]=='0':
+                    empty.append(i)
+        return empty
         pass
 
     def is_terminal_history(self):
         # check if the history is a terminal history
         # Feel free to implement this in anyway if needed
+        if self.is_draw() or self.is_win():
+            return True
+        return False
         pass
 
     def get_utility_given_terminal_history(self):
         # Feel free to implement this in anyway if needed
+        if self.is_draw():
+            return 0
+        wins = [[0,1,2],[0,3,6],[0,4,8],[1,4,7],[2,5,8],[3,4,5],[6,7,8],[2,4,6]]
+        for win in wins:
+            if self.board[win[0]]==self.board[win[1]] and self.board[win[1]]==self.board[win[2]]:
+                winner=self.board[win[0]]
+                if winner=='x':
+                    return 1
+                else:
+                    return -1
         pass
 
     def update_history(self, action):
         # In case you need to create a deepcopy and update the history obj to get the next history object.
         # Feel free to implement this in anyway if needed
+        self.history.append(action)
+        self.board = self.get_board()
         pass
 
 
-def backward_induction(history_obj):
+def backward_induction(history_obj:History):
     """
     :param history_obj: Histroy class object
     :return: best achievable utility (float) for th current history_obj
@@ -122,6 +148,50 @@ def backward_induction(history_obj):
     # actions. But since tictactoe is a PIEFG, there always exists an optimal deterministic strategy (SPNE). So your
     # policy will be something like this {"0": 1, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6": 0, "7": 0, "8": 0} where
     # "0" was the one of the best actions for the current player/history.
+    if history_obj.is_terminal_history():
+        return history_obj.get_utility_given_terminal_history()
+    
+    curr = history_obj.current_player()
+
+    if curr=='x':
+        bestu = -10
+        acts = history_obj.get_valid_actions()
+        valid_act = acts[0]
+        for act in acts:
+            new_hist = copy.deepcopy(history_obj)
+            new_hist.update_history(act)
+            uti = backward_induction(new_hist)
+            if uti > bestu:
+                bestu=uti
+                valid_act = act
+        strat = {}
+        for i in range(9):
+            if i!=valid_act:
+                strat[i]=0
+            else:
+                strat[i]=1
+        strategy_dict_x["".join(map(str, history_obj.history))] = strat
+        return bestu
+    else:
+        worstu=10
+        acts = history_obj.get_valid_actions()
+        valid_act = acts[0]
+        for act in acts:
+            new_hist = copy.deepcopy(history_obj)
+            new_hist.update_history(act)
+            uti = backward_induction(new_hist)
+            if uti < worstu:
+                worstu=uti
+                valid_act = act
+        strat = {}
+        for i in range(9):
+            if i!=valid_act:
+                strat[i]=0
+            else:
+                strat[i]=1
+        strategy_dict_o["".join(map(str, history_obj.history))] = strat
+        return worstu
+    
     return -2
     # TODO implement
 
