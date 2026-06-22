@@ -191,7 +191,18 @@ class History:
         
     def update_history(self, action):
         self.history.append(action)
-        self.boards = self.get_boards()
+        board_num = action//9
+        act = action%9
+        self.boards[board_num][act] = 'x'
+        # self.boards = self.get_boards()
+
+    def undo_last(self):
+        action = self.history[-1]
+        self.history.pop(-1)
+        board_num = action//9
+        act = action%9
+        self.boards[board_num][act] = '0'
+        # self.boards = self.get_boards()
 
 
 def alpha_beta_pruning(history_obj: History, alpha, beta, max_player_flag):
@@ -221,31 +232,37 @@ def alpha_beta_pruning(history_obj: History, alpha, beta, max_player_flag):
         if act%9 in [0,2,6,8]:
             ordered_acts.append(act)
     for act in acts:
-        if act not in ordered_acts:
+        if act%9 in [1,3,5,7]:
             ordered_acts.append(act)
     if curr==1:
         bestu = -67
         for act in ordered_acts:
-            new_hist = copy.deepcopy(history_obj)
-            new_hist.update_history(act)
-            val = alpha_beta_pruning(new_hist, alpha, beta, new_hist.get_current_player() == 1)
+            # new_hist = copy.deepcopy(history_obj)
+            # history_obj.update_history(act)
+            history_obj.update_history(act)
+            val = alpha_beta_pruning(history_obj, alpha, beta, history_obj.get_current_player() == 1)
+            history_obj.undo_last()
             if val>bestu:
                 bestu = val
             alpha = max(val, alpha)
             if alpha>=beta:
                 break
+            
         return bestu
     else:
         worstu = 67
         for act in ordered_acts:
-            new_hist = copy.deepcopy(history_obj)
-            new_hist.update_history(act)
-            val = alpha_beta_pruning(new_hist, alpha, beta, new_hist.get_current_player() == 1)
+            # new_hist = copy.deepcopy(history_obj)
+            # history_obj.update_history(act)
+            history_obj.update_history(act)
+            val = alpha_beta_pruning(history_obj, alpha, beta, history_obj.get_current_player() == 1)
+            history_obj.undo_last()
             if val<worstu:
                 worstu = val
             beta = min(val, beta)
             if alpha>=beta:
                 break
+            
         return worstu
     return -2
     # TODO implement
@@ -331,7 +348,7 @@ def solve_alpha_beta_pruning(history_obj, alpha, beta, max_player_flag):
 if __name__ == "__main__":
     logging.info("start")
     logging.info("alpha beta pruning")
-    value, visited_histories = solve_alpha_beta_pruning(History(history=[], num_boards=2), -math.inf, math.inf, True)
+    value, visited_histories = solve_alpha_beta_pruning(History(history=[], num_boards=3), -math.inf, math.inf, True)
     logging.info("maxmin value {}".format(value))
     logging.info("Number of histories visited {}".format(len(visited_histories)))
     logging.info("maxmin memory")
